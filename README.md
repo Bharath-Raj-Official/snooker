@@ -38,7 +38,7 @@ This is simplified snooker. It covers pot values, red/color alternation, color s
 
 ## Validation
 
-Edge checks cover launching, a shot, paused resize persistence, reset to 15 reds and six pockets, wrong-color foul award without score subtraction, and stale CPU callback cancellation. Full rule coverage is intentionally not claimed.
+Edge checks cover launching, a shot, paused resize persistence, reset to 15 reds and six pockets, wrong-color foul award without score subtraction, final-black endgame, eligible CPU targeting and stale CPU callback cancellation. Full rule coverage is intentionally not claimed.
 
 ## Third-party attribution
 

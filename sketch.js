@@ -65,6 +65,9 @@ let helpButtonArea = { x: 0, y: 0, size: 0 }; // To store button's clickable are
 
 function setup() {
     createCanvas(1200, 680).parent('table-host');
+    const tableCanvas=document.querySelector('#table-host canvas');
+    tableCanvas.tabIndex=0;
+    tableCanvas.setAttribute('aria-label','Snooker table. Drag the cue ball into the D. Use A and D to aim, then the power control and Shoot button.');
     matchGeneration++;
     clearTimeout(cpuTimer);
     matchPaused=false;
