@@ -1,3 +1,4 @@
+let cpuTimer=null;
 const CPU_SHOT_POWER_MIN = 0.008; // Min force factor for CPU shot
 const CPU_SHOT_POWER_MAX = 0.015; // Max force factor for CPU shot
 const CPU_PLACEMENT_RETRY_LIMIT = 5; // How many times to try placing cue ball if spot is bad
@@ -30,7 +31,10 @@ function cpuTakeTurn() {
     // Step 2: CPU "thinks" - find a shot
     // Using setTimeout to simulate thinking and to allow canvas to redraw 
     console.log("CPU: Thinking...");
-    setTimeout(() => {
+    const generation=matchGeneration;
+    cpuTimer=setTimeout(() => {
+        if(generation!==matchGeneration || currentPlayer!==PLAYER_ID.CPU) return;
+        if(matchPaused){ cpuTakeTurn(); return; }
         const shotDetails = cpuFindBestShot();
 
         if (shotDetails) {

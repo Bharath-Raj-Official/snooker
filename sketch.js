@@ -1,3 +1,4 @@
+let matchGeneration=0, matchPaused=false;
 // My digital snooker application is engineered to provide an engaging simulation, distinguished by several unique extensions that enhances the player’s 
 // experience and replayability, all built upon an intuitive design for cue manipulation. The primary interaction involves a synergistic use of mouse and 
 // keyboard for shot execution. After the player places the cue ball within the “D” zone, the gameplay state is transitioned to activate the cue’s visibility 
@@ -63,7 +64,13 @@ let showHelpPopup = false;
 let helpButtonArea = { x: 0, y: 0, size: 0 }; // To store button's clickable area
 
 function setup() {
-    createCanvas(windowWidth, windowHeight);
+    createCanvas(1200, 680).parent('table-host');
+    matchGeneration++;
+    clearTimeout(cpuTimer);
+    matchPaused=false;
+    pocketPositions=[];
+    if(world) Matter.World.clear(world,false);
+    if(engine) Matter.Engine.clear(engine);
     rectMode(CENTER);
     ellipseMode(RADIUS);
     currentGameState = GAME_STATE.PLACING_CUE_BALL;
@@ -71,7 +78,7 @@ function setup() {
 
     // 1. Calculate table dimensions and scaling
     // Table length is horizontal, table width is vertical
-    let DesiredTableLengthPx = windowWidth * 0.7; // Use 70% of window width for table length
+    let DesiredTableLengthPx = width * 0.88;
     const minTableLengthPx = RWD_TABLE_LENGTH_INCHES * 2.5; // Min visual scale
     const maxTableLengthPx = RWD_TABLE_LENGTH_INCHES * 8;   // Max visual scale
     tableLayout.lengthPx = constrain(DesiredTableLengthPx, minTableLengthPx, maxTableLengthPx);
@@ -127,7 +134,9 @@ function setup() {
 }
 
 function draw() {
-    background(227, 219, 197);
+    updateInterface();
+    if(matchPaused) return;
+    background(17, 38, 31);
 
     drawTableRailings();   // From table.js
     drawRailingDesigns();  // From table.js
@@ -377,10 +386,8 @@ function handlePocketedBall(ball) {
 
     if (ball.name === "cueBall") {
         console.log("Cue ball pocketed by", actingPlayer, "! FOUL.");
-        if (actingPlayer === PLAYER_ID.HUMAN) {
-            playerScore = Math.max(0, playerScore - 4);
-        } else { // CPU fouled
-            cpuScore = Math.max(0, cpuScore - 4); 
+        if (actingPlayer === PLAYER_ID.HUMAN) { cpuScore += 4; } else { // CPU fouled
+             
             console.log("CPU fouled with cue ball. Human awarded 4 points (example).");
             playerScore += 4; 
         }
@@ -401,10 +408,10 @@ function handlePocketedBall(ball) {
             } else { // Foul
                 console.log("FOUL by", actingPlayer, ": Potted RED when target was", previousTarget);
                 if (actingPlayer === PLAYER_ID.HUMAN) { 
-                    playerScore = Math.max(0, playerScore - 4); 
+                     
                     cpuScore += 4; // Opponent gets points
                 } else { 
-                    cpuScore = Math.max(0, cpuScore - 4); 
+                     
                     playerScore += 4; // Opponent gets points
                 }
                 // localShotMadeThisTurn.continuesBreak remains false.
@@ -443,10 +450,8 @@ function handlePocketedBall(ball) {
             console.log("FOUL by", actingPlayer, ": Potted " + ball.name + " when target was " + previousTarget);
             const penalty = Math.max(4, ballValue);
             if (actingPlayer === PLAYER_ID.HUMAN) { 
-                playerScore = Math.max(0, playerScore - penalty); 
                 cpuScore += penalty; // Opponent gets points
             } else { 
-                cpuScore = Math.max(0, cpuScore - penalty); 
                 playerScore += penalty; // Opponent gets points
             }
             colouredBallsPottedThisShotCount++; respawnColouredBall(ball); ball.isSunk = false;
@@ -611,6 +616,7 @@ function switchBallSetupMode(mode) {
 }
 
 function keyPressed() {
+    if (matchPaused || /INPUT|SELECT|BUTTON|TEXTAREA/.test(document.activeElement?.tagName)) return;
     if (showHelpPopup) {
         if (keyCode === ESCAPE) {
             showHelpPopup = false;
@@ -670,7 +676,8 @@ function handleContinuousCueRotation() {
     }
 }
 
-function mousePressed() {
+function mousePressed(event) {
+    if (matchPaused || (event?.target && event.target.tagName !== 'CANVAS')) return;
     // Check for help button click FIRST
     if (mouseX > helpButtonArea.x && mouseX < helpButtonArea.x + helpButtonArea.size &&
         mouseY > helpButtonArea.y && mouseY < helpButtonArea.y + helpButtonArea.size) {
@@ -773,6 +780,7 @@ function mousePressed() {
 }
 
 function mouseDragged() {
+    if (matchPaused) return;
     if (showHelpPopup) return; // Prevent dragging for game actions if help is visible
 
     if (isDraggingCueBallForPlacement) {
@@ -797,6 +805,7 @@ function mouseDragged() {
 }
 
 function mouseReleased() {
+    if (matchPaused) { cue.isPoweringUp=false; isDraggingCueBallForPlacement=false; return; }
     if (currentPlayer !== PLAYER_ID.HUMAN && !isDraggingCueBallForPlacement) { // Allow finishing drag if somehow started by human
         return;
     }
@@ -937,12 +946,4 @@ function resetTargetBallType() {
     console.log("--- Exiting resetTargetBallType ---");
 }
 
-function windowResized() {
-    console.log("Window resized. Re-initializing simulation.");
-    // Remove all matter bodies before re-creating to avoid duplicates if setup adds to existing world
-    if (world) Matter.World.clear(world, false); // false to keep engine
-    if (engine) Matter.Engine.clear(engine); // Clears the engine (removes world too)
-    
-    // Re-run setup to recalculate everything based on new window size
-    setup();
-}
+function windowResized() { /* CSS scales a stable simulation viewport. */ }
